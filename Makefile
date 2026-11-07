@@ -13,7 +13,6 @@ PWD:=$(shell pwd)
 WIFI_INSTALL_DIR := $(PWD)/driver_install
 
 export WIFI_PROJ_DIR=$(PWD)
-export
 -include $(src)/Makefile.build.kernel
 
 export DRIVER_PATH ?= $(PWD)
@@ -23,7 +22,15 @@ export DRIVER_PATH ?= $(PWD)
 ifeq ($(CONFIG_ATBM_MODULE_DRIVER_NAME),)
 CONFIG_ATBM_MODULE_DRIVER_NAME = "atbm_wlan"
 endif
-MODULES_NAME   ?= $(shell echo $(CONFIG_ATBM_MODULE_NAME))
+ifeq ($(origin MODULES_NAME),undefined)
+MODULES_NAME := $(shell echo $(CONFIG_ATBM_MODULE_NAME))
+endif
+# By name, never with a bare `export`: kbuild reads this file as the module's
+# Makefile, so a bare one also exports every kbuild variable, and GNU make 4.4
+# expands exported variables for each $(shell). Then Makefile.lib's
+# multi_depend $(eval) fires mid-parse and a 4.9 kernel stops with
+# "prerequisites cannot be defined in recipes".
+export MODULES_NAME CONFIG_ATBM_MODULE_DRIVER_NAME
 
 ################## BLE ###############################
 ifeq ($(CONFIG_ATBM_BLE_HOST_DRIVER),y)
